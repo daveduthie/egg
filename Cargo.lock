@@ -3,5 +3,9 @@
 version = 3
 
 [[package]]
-name = "egg"
+name = "egg-index"
+version = "0.1.0"
+
+[[package]]
+name = "egg-index-one"
 version = "0.1.0"
