@@ -90,4 +90,32 @@ mod tree_tests {
         assert_eq!(None, tree.entry_for(1));
         assert_eq!(Some(&node2), tree.entry_for(2));
     }
+
+    #[test]
+    fn nested_test() {
+        let node1 = Node::Leaf(Leaf {
+            data: vec!["foo".into(), "bar".into()],
+        });
+        let node2 = Node::Leaf(Leaf {
+            data: vec!["baz".into()],
+        });
+        let node3 = Node::Tree(Tree {
+            bitmap: 0b10100000 << (ALPHABET_SIZE - 8),
+            children: vec![node1.clone(), node2.clone()],
+        });
+
+        let tree = Tree {
+            bitmap: 0b10000000 << (ALPHABET_SIZE - 8),
+            children: vec![node3.clone()],
+        };
+
+        let t1 = tree.entry_for(0);
+        match t1 {
+            Some(Node::Tree(t)) => {
+                assert_eq!(t.entry_for(0), Some(&node1));
+                assert_eq!(t.entry_for(2), Some(&node2));
+            },
+            _ => todo!(),
+        }
+    }
 }
