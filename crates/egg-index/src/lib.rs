@@ -24,10 +24,10 @@ mod bitmap_tests {
     #[test]
     fn is_set_test() {
         let bitmap = 0b10100000 << (ALPHABET_SIZE - 8);
-        assert_eq!(true, is_set(bitmap, 0));
-        assert_eq!(false, is_set(bitmap, 1));
-        assert_eq!(true, is_set(bitmap, 2));
-        assert_eq!(false, is_set(bitmap, 3));
+        assert!(is_set(bitmap, 0));
+        assert!(!is_set(bitmap, 1));
+        assert!(is_set(bitmap, 2));
+        assert!(!is_set(bitmap, 3));
     }
 
     #[test]
@@ -40,24 +40,34 @@ mod bitmap_tests {
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-pub struct Tree {
+pub struct Tree<T> {
     bitmap: u64,
-    children: Vec<Node>,
+    children: Vec<Node<T>>,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-pub struct Leaf {
-    data: Vec<String>,
+pub struct Leaf<T> {
+    data: Vec<T>,
+}
+
+impl<T> Leaf<T> {
+    pub fn new(data: Vec<T>) -> Self {
+        Self { data }
+    }
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-pub enum Node {
-    Leaf(Leaf),
-    Tree(Tree),
+pub enum Node<T> {
+    Leaf(Leaf<T>),
+    Tree(Tree<T>),
 }
 
-impl Tree {
-    pub fn entry_for(&self, key: u64) -> Option<&Node> {
+impl<T> Tree<T> {
+    pub fn new(bitmap: u64, children: Vec<Node<T>>) -> Self {
+        Self { bitmap, children }
+    }
+
+    pub fn entry_for(&self, key: u64) -> Option<&Node<T>> {
         if is_set(self.bitmap, key) {
             println!("It's set: {:b}", key);
             let index = bitmap_index_of(self.bitmap, key);
@@ -74,17 +84,13 @@ mod tree_tests {
 
     #[test]
     fn basic_test() {
-        let node1 = Node::Leaf(Leaf {
-            data: vec!["foo".into(), "bar".into()],
-        });
-        let node2 = Node::Leaf(Leaf {
-            data: vec!["baz".into()],
-        });
+        let node1 = Node::Leaf(Leaf::new(vec!["foo", "bar"]));
+        let node2 = Node::Leaf(Leaf::new(vec!["baz"]));
 
-        let tree = Tree {
-            bitmap: 0b10100000 << (ALPHABET_SIZE - 8),
-            children: vec![node1.clone(), node2.clone()],
-        };
+        let tree = Tree::new(
+            0b10100000 << (ALPHABET_SIZE - 8),
+            vec![node1.clone(), node2.clone()],
+        );
 
         assert_eq!(Some(&node1), tree.entry_for(0));
         assert_eq!(None, tree.entry_for(1));
@@ -93,28 +99,21 @@ mod tree_tests {
 
     #[test]
     fn nested_test() {
-        let node1 = Node::Leaf(Leaf {
-            data: vec!["foo".into(), "bar".into()],
-        });
-        let node2 = Node::Leaf(Leaf {
-            data: vec!["baz".into()],
-        });
-        let node3 = Node::Tree(Tree {
-            bitmap: 0b10100000 << (ALPHABET_SIZE - 8),
-            children: vec![node1.clone(), node2.clone()],
-        });
+        let node1 = Node::Leaf(Leaf::new(vec!["foo", "bar"]));
+        let node2 = Node::Leaf(Leaf::new(vec!["baz"]));
+        let node3 = Node::Tree(Tree::new(
+            0b10100000 << (ALPHABET_SIZE - 8),
+            vec![node1.clone(), node2.clone()],
+        ));
 
-        let tree = Tree {
-            bitmap: 0b10000000 << (ALPHABET_SIZE - 8),
-            children: vec![node3.clone()],
-        };
+        let tree = Tree::new(0b10000000 << (ALPHABET_SIZE - 8), vec![node3.clone()]);
 
         let t1 = tree.entry_for(0);
         match t1 {
             Some(Node::Tree(t)) => {
                 assert_eq!(t.entry_for(0), Some(&node1));
                 assert_eq!(t.entry_for(2), Some(&node2));
-            },
+            }
             _ => todo!(),
         }
     }
